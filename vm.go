@@ -2213,36 +2213,46 @@ func (p getPropRefRecvStrict) exec(vm *vm) {
 	vm.pc++
 }
 
-type setProp unistring.String
+type setProp struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setProp) exec(vm *vm) {
+func (p *setProp) exec(vm *vm) {
 	val := vm.stack[vm.sp-1]
-	vm.stack[vm.sp-2].ToObject(vm.r).self.setOwnStr(unistring.String(p), val, false)
+	o := vm.stack[vm.sp-2].ToObject(vm.r)
+	p.cache.setProp(vm.r, o, p.name, val, false)
 	vm.stack[vm.sp-2] = val
 	vm.sp--
 	vm.pc++
 }
 
-type setPropP unistring.String
+type setPropP struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropP) exec(vm *vm) {
+func (p *setPropP) exec(vm *vm) {
 	val := vm.stack[vm.sp-1]
-	vm.stack[vm.sp-2].ToObject(vm.r).self.setOwnStr(unistring.String(p), val, false)
+	o := vm.stack[vm.sp-2].ToObject(vm.r)
+	p.cache.setProp(vm.r, o, p.name, val, false)
 	vm.sp -= 2
 	vm.pc++
 }
 
-type setPropStrict unistring.String
+type setPropStrict struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropStrict) exec(vm *vm) {
+func (p *setPropStrict) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if receiverObj, ok := receiver.(*Object); ok {
-		receiverObj.self.setOwnStr(propName, val, true)
+		p.cache.setProp(vm.r, receiverObj, p.name, val, true)
 	} else {
 		base := receiver.ToObject(vm.r)
-		base.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, true)
 	}
 
 	vm.stack[vm.sp-2] = val
@@ -2250,18 +2260,20 @@ func (p setPropStrict) exec(vm *vm) {
 	vm.pc++
 }
 
-type setPropRecv unistring.String
+type setPropRecv struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropRecv) exec(vm *vm) {
+func (p *setPropRecv) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-3]
 	o := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if obj, ok := o.(*Object); ok {
-		obj.setStr(propName, val, receiver, false)
+		p.cache.setPropRecv(vm.r, obj, p.name, val, receiver, false)
 	} else {
 		base := o.ToObject(vm.r)
-		base.setStr(propName, val, receiver, false)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, false)
 	}
 
 	vm.stack[vm.sp-3] = val
@@ -2269,18 +2281,20 @@ func (p setPropRecv) exec(vm *vm) {
 	vm.pc++
 }
 
-type setPropRecvStrict unistring.String
+type setPropRecvStrict struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropRecvStrict) exec(vm *vm) {
+func (p *setPropRecvStrict) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-3]
 	o := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if obj, ok := o.(*Object); ok {
-		obj.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, obj, p.name, val, receiver, true)
 	} else {
 		base := o.ToObject(vm.r)
-		base.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, true)
 	}
 
 	vm.stack[vm.sp-3] = val
@@ -2288,63 +2302,72 @@ func (p setPropRecvStrict) exec(vm *vm) {
 	vm.pc++
 }
 
-type setPropRecvP unistring.String
+type setPropRecvP struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropRecvP) exec(vm *vm) {
+func (p *setPropRecvP) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-3]
 	o := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if obj, ok := o.(*Object); ok {
-		obj.setStr(propName, val, receiver, false)
+		p.cache.setPropRecv(vm.r, obj, p.name, val, receiver, false)
 	} else {
 		base := o.ToObject(vm.r)
-		base.setStr(propName, val, receiver, false)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, false)
 	}
 
 	vm.sp -= 3
 	vm.pc++
 }
 
-type setPropRecvStrictP unistring.String
+type setPropRecvStrictP struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropRecvStrictP) exec(vm *vm) {
+func (p *setPropRecvStrictP) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-3]
 	o := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if obj, ok := o.(*Object); ok {
-		obj.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, obj, p.name, val, receiver, true)
 	} else {
 		base := o.ToObject(vm.r)
-		base.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, true)
 	}
 
 	vm.sp -= 3
 	vm.pc++
 }
 
-type setPropStrictP unistring.String
+type setPropStrictP struct {
+	name  unistring.String
+	cache inlineSetPropCache
+}
 
-func (p setPropStrictP) exec(vm *vm) {
+func (p *setPropStrictP) exec(vm *vm) {
 	receiver := vm.stack[vm.sp-2]
 	val := vm.stack[vm.sp-1]
-	propName := unistring.String(p)
 	if receiverObj, ok := receiver.(*Object); ok {
-		receiverObj.self.setOwnStr(propName, val, true)
+		p.cache.setProp(vm.r, receiverObj, p.name, val, true)
 	} else {
 		base := receiver.ToObject(vm.r)
-		base.setStr(propName, val, receiver, true)
+		p.cache.setPropRecv(vm.r, base, p.name, val, receiver, true)
 	}
 
 	vm.sp -= 2
 	vm.pc++
 }
 
-type putProp unistring.String
+type putProp struct {
+	name  unistring.String
+	cache inlinePutPropCache
+}
 
-func (p putProp) exec(vm *vm) {
-	vm.r.toObject(vm.stack[vm.sp-2]).self._putProp(unistring.String(p), vm.stack[vm.sp-1], true, true, true)
+func (p *putProp) exec(vm *vm) {
+	p.cache._putProp(vm.r.toObject(vm.stack[vm.sp-2]), p.name, vm.stack[vm.sp-1])
 
 	vm.sp--
 	vm.pc++
@@ -2514,69 +2537,79 @@ func (s *defineSetter) exec(vm *vm) {
 	vm.pc++
 }
 
-type getProp unistring.String
+type getProp struct {
+	name  unistring.String
+	cache inlinePropCache
+}
 
-func (g getProp) exec(vm *vm) {
+func (g *getProp) exec(vm *vm) {
 	v := vm.stack[vm.sp-1]
 	obj := v.baseObject(vm.r)
 	if obj == nil {
-		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g))
+		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g.name))
 		return
 	}
-	vm.stack[vm.sp-1] = nilSafe(obj.self.getStr(unistring.String(g), v))
+	vm.stack[vm.sp-1] = nilSafe(g.cache.getStr(vm.r, obj, g.name, v))
 
 	vm.pc++
 }
 
-type getPropRecv unistring.String
+type getPropRecv struct {
+	name  unistring.String
+	cache inlinePropCache
+}
 
-func (g getPropRecv) exec(vm *vm) {
+func (g *getPropRecv) exec(vm *vm) {
 	recv := vm.stack[vm.sp-2]
 	v := vm.stack[vm.sp-1]
 	obj := v.baseObject(vm.r)
 	if obj == nil {
-		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g))
+		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g.name))
 		return
 	}
-	vm.stack[vm.sp-2] = nilSafe(obj.self.getStr(unistring.String(g), recv))
+	vm.stack[vm.sp-2] = nilSafe(g.cache.getStr(vm.r, obj, g.name, recv))
 	vm.sp--
 	vm.pc++
 }
 
-type getPropRecvCallee unistring.String
+type getPropRecvCallee struct {
+	name  unistring.String
+	cache inlinePropCache
+}
 
-func (g getPropRecvCallee) exec(vm *vm) {
+func (g *getPropRecvCallee) exec(vm *vm) {
 	recv := vm.stack[vm.sp-2]
 	v := vm.stack[vm.sp-1]
 	obj := v.baseObject(vm.r)
 	if obj == nil {
-		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g))
+		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined", g.name))
 		return
 	}
 
-	n := unistring.String(g)
-	prop := obj.self.getStr(n, recv)
+	prop := g.cache.getStr(vm.r, obj, g.name, recv)
 	if prop == nil {
-		prop = memberUnresolved{valueUnresolved{r: vm.r, ref: n}}
+		prop = memberUnresolved{valueUnresolved{r: vm.r, ref: g.name}}
 	}
 
 	vm.stack[vm.sp-1] = prop
 	vm.pc++
 }
 
-type getPropCallee unistring.String
+type getPropCallee struct {
+	name  unistring.String
+	cache inlinePropCache
+}
 
-func (g getPropCallee) exec(vm *vm) {
+func (g *getPropCallee) exec(vm *vm) {
 	v := vm.stack[vm.sp-1]
 	obj := v.baseObject(vm.r)
-	n := unistring.String(g)
 	if obj == nil {
-		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined or null", n))
+		vm.throw(vm.r.NewTypeError("Cannot read property '%s' of undefined or null", g.name))
 		return
 	}
-	prop := obj.self.getStr(n, v)
+	prop := g.cache.getStr(vm.r, obj, g.name, v)
 	if prop == nil {
-		prop = memberUnresolved{valueUnresolved{r: vm.r, ref: n}}
+		prop = memberUnresolved{valueUnresolved{r: vm.r, ref: g.name}}
 	}
 	vm.push(prop)
 

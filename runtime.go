@@ -208,6 +208,8 @@ type Runtime struct {
 	// Stack for tracking objects currently being converted to string
 	// to detect and handle circular references
 	toStringStack []*Object
+
+	protoEpoch uint64
 }
 
 type StackFrame struct {
@@ -457,7 +459,6 @@ func (r *Runtime) init() {
 	r.newTemplatedObject(getGlobalObjectTemplate(), r.globalObject)
 
 	r.rootClass = &tinyClass{
-		prototype:  r.global.ObjectPrototype,
 		extensible: true,
 	}
 
@@ -494,6 +495,7 @@ func (r *Runtime) newSyntaxError(msg string) Value {
 }
 
 func newBaseObjectObj(obj, proto *Object, class string) *baseObject {
+	markObjectUsedAsPrototype(proto)
 	o := &baseObject{
 		class:      class,
 		val:        obj,
@@ -506,6 +508,7 @@ func newBaseObjectObj(obj, proto *Object, class string) *baseObject {
 }
 
 func newGuardedObj(proto *Object, class string) *guardedObject {
+	markObjectUsedAsPrototype(proto)
 	return &guardedObject{
 		baseObject: baseObject{
 			class:      class,
@@ -516,16 +519,19 @@ func newGuardedObj(proto *Object, class string) *guardedObject {
 }
 
 func (r *Runtime) newBaseObject(proto *Object, class string) (o *baseObject) {
+	markObjectUsedAsPrototype(proto)
 	v := &Object{runtime: r}
 	return newBaseObjectObj(v, proto, class)
 }
 
 func (r *Runtime) newTinyObject(proto *Object) (o *tinyObject) {
+	markObjectUsedAsPrototype(proto)
 	stats.incTinyObjectCreates()
 	v := &Object{runtime: r}
 	o = &tinyObject{
-		class: r.rootClass.getForProto(proto),
-		val:   v,
+		class:     r.rootClass,
+		val:       v,
+		prototype: proto,
 	}
 	v.self = o
 	return

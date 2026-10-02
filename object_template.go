@@ -84,6 +84,7 @@ func (o *templatedObject) materialiseProto() {
 	if !o.protoMaterialised {
 		if o.tmpl.protoFactory != nil {
 			o.prototype = o.tmpl.protoFactory(o.val.runtime)
+			markObjectUsedAsPrototype(o.prototype)
 		}
 		o.protoMaterialised = true
 	}

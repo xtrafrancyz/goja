@@ -449,6 +449,7 @@ func (o *baseDynamicObject) proto() *Object {
 
 func (o *baseDynamicObject) setProto(proto *Object, throw bool) bool {
 	o.prototype = proto
+	markObjectUsedAsPrototype(proto)
 	return true
 }
 

@@ -522,7 +522,7 @@ func (e *compiledSuperDotExpr) emitGetter(putOnStack bool) {
 	e.c.emitLoadThis()
 	e.c.emit(loadSuper)
 	e.addSrcMap()
-	e.c.emit(getPropRecv(e.name))
+	e.c.emit(&getPropRecv{name: e.name})
 	if !putOnStack {
 		e.c.emit(pop)
 	}
@@ -535,15 +535,15 @@ func (e *compiledSuperDotExpr) emitSetter(valueExpr compiledExpr, putOnStack boo
 	e.addSrcMap()
 	if putOnStack {
 		if e.c.scope.strict {
-			e.c.emit(setPropRecvStrict(e.name))
+			e.c.emit(&setPropRecvStrict{name: e.name})
 		} else {
-			e.c.emit(setPropRecv(e.name))
+			e.c.emit(&setPropRecv{name: e.name})
 		}
 	} else {
 		if e.c.scope.strict {
-			e.c.emit(setPropRecvStrictP(e.name))
+			e.c.emit(&setPropRecvStrictP{name: e.name})
 		} else {
-			e.c.emit(setPropRecvP(e.name))
+			e.c.emit(&setPropRecvP{name: e.name})
 		}
 	}
 }
@@ -551,32 +551,32 @@ func (e *compiledSuperDotExpr) emitSetter(valueExpr compiledExpr, putOnStack boo
 func (e *compiledSuperDotExpr) emitUnary(prepare, body func(), postfix, putOnStack bool) {
 	if !putOnStack {
 		e.c.emitLoadThis()
-		e.c.emit(loadSuper, dupLast(2), getPropRecv(e.name))
+		e.c.emit(loadSuper, dupLast(2), &getPropRecv{name: e.name})
 		body()
 		e.addSrcMap()
 		if e.c.scope.strict {
-			e.c.emit(setPropRecvStrictP(e.name))
+			e.c.emit(&setPropRecvStrictP{name: e.name})
 		} else {
-			e.c.emit(setPropRecvP(e.name))
+			e.c.emit(&setPropRecvP{name: e.name})
 		}
 	} else {
 		if !postfix {
 			e.c.emitLoadThis()
-			e.c.emit(loadSuper, dupLast(2), getPropRecv(e.name))
+			e.c.emit(loadSuper, dupLast(2), &getPropRecv{name: e.name})
 			if prepare != nil {
 				prepare()
 			}
 			body()
 			e.addSrcMap()
 			if e.c.scope.strict {
-				e.c.emit(setPropRecvStrict(e.name))
+				e.c.emit(&setPropRecvStrict{name: e.name})
 			} else {
-				e.c.emit(setPropRecv(e.name))
+				e.c.emit(&setPropRecv{name: e.name})
 			}
 		} else {
 			e.c.emit(loadUndef)
 			e.c.emitLoadThis()
-			e.c.emit(loadSuper, dupLast(2), getPropRecv(e.name))
+			e.c.emit(loadSuper, dupLast(2), &getPropRecv{name: e.name})
 			if prepare != nil {
 				prepare()
 			}
@@ -584,9 +584,9 @@ func (e *compiledSuperDotExpr) emitUnary(prepare, body func(), postfix, putOnSta
 			body()
 			e.addSrcMap()
 			if e.c.scope.strict {
-				e.c.emit(setPropRecvStrictP(e.name))
+				e.c.emit(&setPropRecvStrictP{name: e.name})
 			} else {
-				e.c.emit(setPropRecvP(e.name))
+				e.c.emit(&setPropRecvP{name: e.name})
 			}
 		}
 	}
@@ -909,7 +909,7 @@ func (c *compiler) compileBracketExpression(v *ast.BracketExpression) compiledEx
 func (e *compiledDotExpr) emitGetter(putOnStack bool) {
 	e.left.emitGetter(true)
 	e.addSrcMap()
-	e.c.emit(getProp(e.name))
+	e.c.emit(&getProp{name: e.name})
 	if !putOnStack {
 		e.c.emit(pop)
 	}
@@ -930,15 +930,15 @@ func (e *compiledDotExpr) emitSetter(valueExpr compiledExpr, putOnStack bool) {
 	e.addSrcMap()
 	if e.c.scope.strict {
 		if putOnStack {
-			e.c.emit(setPropStrict(e.name))
+			e.c.emit(&setPropStrict{name: e.name})
 		} else {
-			e.c.emit(setPropStrictP(e.name))
+			e.c.emit(&setPropStrictP{name: e.name})
 		}
 	} else {
 		if putOnStack {
-			e.c.emit(setProp(e.name))
+			e.c.emit(&setProp{name: e.name})
 		} else {
-			e.c.emit(setPropP(e.name))
+			e.c.emit(&setPropP{name: e.name})
 		}
 	}
 }
@@ -947,34 +947,34 @@ func (e *compiledDotExpr) emitUnary(prepare, body func(), postfix, putOnStack bo
 	if !putOnStack {
 		e.left.emitGetter(true)
 		e.c.emit(dup)
-		e.c.emit(getProp(e.name))
+		e.c.emit(&getProp{name: e.name})
 		body()
 		e.addSrcMap()
 		if e.c.scope.strict {
-			e.c.emit(setPropStrictP(e.name))
+			e.c.emit(&setPropStrictP{name: e.name})
 		} else {
-			e.c.emit(setPropP(e.name))
+			e.c.emit(&setPropP{name: e.name})
 		}
 	} else {
 		if !postfix {
 			e.left.emitGetter(true)
 			e.c.emit(dup)
-			e.c.emit(getProp(e.name))
+			e.c.emit(&getProp{name: e.name})
 			if prepare != nil {
 				prepare()
 			}
 			body()
 			e.addSrcMap()
 			if e.c.scope.strict {
-				e.c.emit(setPropStrict(e.name))
+				e.c.emit(&setPropStrict{name: e.name})
 			} else {
-				e.c.emit(setProp(e.name))
+				e.c.emit(&setProp{name: e.name})
 			}
 		} else {
 			e.c.emit(loadUndef)
 			e.left.emitGetter(true)
 			e.c.emit(dup)
-			e.c.emit(getProp(e.name))
+			e.c.emit(&getProp{name: e.name})
 			if prepare != nil {
 				prepare()
 			}
@@ -982,9 +982,9 @@ func (e *compiledDotExpr) emitUnary(prepare, body func(), postfix, putOnStack bo
 			body()
 			e.addSrcMap()
 			if e.c.scope.strict {
-				e.c.emit(setPropStrictP(e.name))
+				e.c.emit(&setPropStrictP{name: e.name})
 			} else {
-				e.c.emit(setPropP(e.name))
+				e.c.emit(&setPropP{name: e.name})
 			}
 		}
 	}
@@ -2898,7 +2898,7 @@ func (e *compiledObjectLiteral) emitGetter(putOnStack bool) {
 					if isProto {
 						e.c.emit(setProto)
 					} else {
-						e.c.emit(putProp(key))
+						e.c.emit(&putProp{name: key})
 					}
 				case ast.PropertyKindMethod:
 					e.c.emit(&defineMethodKeyed{key: key, enumerable: true})
@@ -2920,7 +2920,7 @@ func (e *compiledObjectLiteral) emitGetter(putOnStack bool) {
 				e.c.throwSyntaxError(e.offset, "'let' cannot be used as a shorthand property in strict mode")
 			}
 			e.c.compileIdentifierExpression(&prop.Name).emitGetter(true)
-			e.c.emit(putProp(key))
+			e.c.emit(&putProp{name: key})
 		case *ast.SpreadElement:
 			e.c.compileExpression(prop.Expression).emitGetter(true)
 			e.c.emit(copySpread)
@@ -3002,7 +3002,7 @@ func (c *compiler) emitCallee(callee compiledExpr) (calleeName unistring.String)
 	switch callee := callee.(type) {
 	case *compiledDotExpr:
 		callee.left.emitGetter(true)
-		c.emit(getPropCallee(callee.name))
+		c.emit(&getPropCallee{name: callee.name})
 	case *compiledPrivateDotExpr:
 		callee.left.emitGetter(true)
 		rn, id := c.resolvePrivateName(callee.name, callee.offset)
@@ -3014,7 +3014,7 @@ func (c *compiler) emitCallee(callee compiledExpr) (calleeName unistring.String)
 	case *compiledSuperDotExpr:
 		c.emitLoadThis()
 		c.emit(loadSuper)
-		c.emit(getPropRecvCallee(callee.name))
+		c.emit(&getPropRecvCallee{name: callee.name})
 	case *compiledBracketExpr:
 		callee.left.emitGetter(true)
 		callee.member.emitGetter(true)
@@ -3353,7 +3353,7 @@ func (c *compiler) emitObjectPattern(pattern *ast.ObjectPattern, emitAssign func
 		case *ast.PropertyShort:
 			c.emit(dup)
 			emitAssign(c.compileIdentifierExpression(&prop.Name), c.compilePatternInitExpr(func() {
-				c.emit(getProp(prop.Name.Name))
+				c.emit(&getProp{name: prop.Name.Name})
 			}, prop.Initializer, prop.Idx0()))
 		case *ast.PropertyKeyed:
 			c.emit(dup)

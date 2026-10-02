@@ -21,6 +21,24 @@ func (s *statsStruct) incTinyObjectDeoptimizations() {
 func (s *statsStruct) incTinyClassMultiTransitions() {
 }
 
+func (s *statsStruct) incICProtoHitCount() {
+}
+
+func (s *statsStruct) incICProtoUncacheableHitCount() {
+}
+
+func (s *statsStruct) incICHitCount() {
+}
+
+func (s *statsStruct) incICMissCount() {
+}
+
+func (s *statsStruct) incICMegaCount() {
+}
+
+func (s *statsStruct) incICProtoEpochUpdateCount() {
+}
+
 func printStats(printf func(string, ...any)) {
 }
 

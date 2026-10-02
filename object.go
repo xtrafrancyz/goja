@@ -226,7 +226,8 @@ type baseObject struct {
 
 	lastSortedPropLen, idxPropCount int
 
-	extensible bool
+	extensible      bool
+	usedAsPrototype bool
 }
 
 type guardedObject struct {
@@ -401,6 +402,9 @@ func (o *baseObject) checkDelete(name unistring.String, val Value, throw bool) b
 }
 
 func (o *baseObject) _delete(name unistring.String) {
+	if o.usedAsPrototype {
+		o.val.runtime.protoEpoch++
+	}
 	delete(o.values, name)
 	for i, n := range o.propNames {
 		if n == name {
@@ -477,6 +481,7 @@ func (o *baseObject) setProto(proto *Object, throw bool) bool {
 		}
 	}
 	o.prototype = proto
+	markObjectUsedAsPrototype(proto)
 	return true
 }
 
@@ -494,6 +499,9 @@ func (o *baseObject) setOwnStr(name unistring.String, val Value, throw bool) boo
 			o.val.runtime.typeErrorResult(throw, "Cannot add property %s, object is not extensible", name)
 			return false
 		} else {
+			if o.usedAsPrototype {
+				o.val.runtime.protoEpoch++
+			}
 			o.values[name] = val
 			names := copyNamesIfNeeded(o.propNames, 1)
 			o.propNames = append(names, name)
@@ -508,6 +516,9 @@ func (o *baseObject) setOwnStr(name unistring.String, val Value, throw bool) boo
 			prop.set(o.val, val)
 		}
 	} else {
+		if o.usedAsPrototype {
+			o.val.runtime.protoEpoch++
+		}
 		o.values[name] = val
 	}
 	return true
@@ -763,6 +774,9 @@ Reject:
 func (o *baseObject) defineOwnPropertyStr(name unistring.String, descr PropertyDescriptor, throw bool) bool {
 	existingVal := o.values[name]
 	if v, ok := o._defineOwnProperty(name, existingVal, descr, throw); ok {
+		if o.usedAsPrototype {
+			o.val.runtime.protoEpoch++
+		}
 		o.values[name] = v
 		if existingVal == nil {
 			names := copyNamesIfNeeded(o.propNames, 1)
@@ -793,6 +807,9 @@ func (o *baseObject) defineOwnPropertySym(s *Symbol, descr PropertyDescriptor, t
 }
 
 func (o *baseObject) _put(name unistring.String, v Value) {
+	if o.usedAsPrototype {
+		o.val.runtime.protoEpoch++
+	}
 	if _, exists := o.values[name]; !exists {
 		names := copyNamesIfNeeded(o.propNames, 1)
 		o.propNames = append(names, name)
@@ -841,6 +858,10 @@ func (o *baseObject) getPrivateEnv(typ *privateEnvType, create bool) *privateEle
 		o.privateElements[typ] = env
 	}
 	return env
+}
+
+func (o *baseObject) markUsedAsPrototype() {
+	o.usedAsPrototype = true
 }
 
 func (o *Object) tryPrimitive(methodName unistring.String) Value {
